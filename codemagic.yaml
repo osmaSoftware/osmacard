@@ -15,20 +15,103 @@ workflows:
     scripts:
 
       # -------------------------------------------------------------
-      # INSTALL .NET 8 (MAUI NON SUPPORTA .NET 9/10 SU CODENAMIC)
+      # INSTALL .NET 8 SDK (MAC ARM64 - TESTATO)
       # -------------------------------------------------------------
       - name: Install .NET 8 SDK
         script: |
-          curl -L https://download.visualstudio.microsoft.com/download/pr/34b44a6c-33b0-4d3d-b694-0a9eecdccb9e/5a1f89e2a9b419add4ef95c0d37db114/dotnet-sdk-8.0.404-osx-arm64.pkg -o dotnet8.pkg
+          echo "⬇️ Scarico .NET SDK 8 per macOS ARM64..."
+          curl -L https://download.visualstudio.microsoft.com/download/pr/dc80cbd8-98d5-4965-aae6-82764fac51e8/2c4c38882052da7afd36d9c8339cdace/dotnet-sdk-8.0.100-osx-arm64.pkg -o dotnet8.pkg
+
+          echo "📦 Verifico dimensione del pacchetto:"
+          ls -lh dotnet8.pkg
+
+          echo "📥 Installo SDK .NET 8..."
           sudo installer -pkg dotnet8.pkg -target /
+
           export PATH="/usr/local/share/dotnet:$PATH"
-          dotnet --version
+
+          echo "✔ Versione .NET installata:"
+          dotnet --info
+
 
       # -------------------------------------------------------------
-      # INSTALL MAUI WORKLOADS NECESSARI
+      # INSTALL MAUI WORKLOADS
       # -------------------------------------------------------------
       - name: Install MAUI workloads
         script: |
           export PATH="/usr/local/share/dotnet:$PATH"
 
-          dotnet workload install mau
+          echo "📦 Installo workload MAUI..."
+          dotnet workload install maui
+
+          echo "📦 Installo workload Android..."
+          dotnet workload install android
+
+          echo "📦 Installo workload iOS..."
+          dotnet workload install ios
+
+          echo "📦 Installo wasm tools (richiesto da MAUI)…"
+          dotnet workload install wasm-tools-net8
+
+          echo "🔄 Workload restore..."
+          dotnet workload restore
+
+          echo "📋 Workload installati:"
+          dotnet workload list
+
+
+      # -------------------------------------------------------------
+      # RESTORE PACKAGES
+      # -------------------------------------------------------------
+      - name: Restore NuGet packages
+        script: |
+          export PATH="/usr/local/share/dotnet:$PATH"
+          dotnet restore $PROJECT_PATH
+
+
+      # -------------------------------------------------------------
+      # BUILD ANDROID (APK/AAB)
+      # -------------------------------------------------------------
+      - name: Build Android
+        script: |
+          export PATH="/usr/local/share/dotnet:$PATH"
+
+          dotnet publish $PROJECT_PATH \
+            -c $BUILD_CONFIGURATION \
+            -f net8.0-android \
+            -p:AndroidSigningKeyStore=$CM_KEYSTORE_PATH \
+            -p:AndroidSigningKeyAlias=$CM_KEY_ALIAS \
+            -p:AndroidSigningKeyPass=$CM_KEY_PASSWORD \
+            -p:AndroidSigningStorePass=$CM_KEYSTORE_PASSWORD \
+            -o build/android
+
+
+      # -------------------------------------------------------------
+      # BUILD iOS IPA
+      # -------------------------------------------------------------
+      - name: Build iOS IPA
+        script: |
+          export PATH="/usr/local/share/dotnet:$PATH"
+
+          dotnet publish $PROJECT_PATH \
+            -c $BUILD_CONFIGURATION \
+            -f net8.0-ios \
+            -p:ArchiveOnPublish=true \
+            -p:EnableCodeSigning=true \
+            -p:CodesignKey="$CERTIFICATE_ID" \
+            -p:CodesignProvision="$PROVISIONING_PROFILE_UUID" \
+            -o build/ios
+
+
+    artifacts:
+      - build/android/**/*.apk
+      - build/android/**/*.aab
+      - build/ios/**/*.ipa
+
+    publishing:
+      email:
+        recipients:
+          - your_email@example.com
+        notify:
+          success: true
+          failure: true
