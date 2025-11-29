@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:zxing="clr-namespace:ZXing.Net.Maui;assembly=ZXing.Net.MAUI"
+    xmlns:viewmodels="clr-namespace:OsmaCard.ViewModels"
+    x:Class="OsmaCard.Views.AddItemPage"
+    x:Name="RootPage">
+
+    <ContentPage.Background>
+        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0.6">
+            <GradientStop Color="#FF5F6D" Offset="0.0" />
+            <GradientStop Color="#FFC371" Offset="0.5" />
+            <GradientStop Color="#8EC5FC" Offset="1.0" />
+        </LinearGradientBrush>
+    </ContentPage.Background>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="18" Spacing="16">
+
+            <Frame CornerRadius="12" Padding="0" HasShadow="True">
+                <zxing:CameraBarcodeReaderView
+                    x:Name="cameraView"
+                    BarcodesDetected="OnBarcodeDetected"
+                    HeightRequest="260"/>
+            </Frame>
+
+            <Entry Placeholder="Descrizione" Text="{Binding Description}" BackgroundColor="#FFFFFFEE" />
+            <Entry Placeholder="Barcode" Text="{Binding Barcode}" BackgroundColor="#FFFFFFEE" />
+
+            <HorizontalStackLayout Spacing="10" HorizontalOptions="Center">
+                <Button Text="Salva" Command="{Binding SaveCommand}" WidthRequest="120" />
+                <Button Text="Annulla" Command="{Binding CancelCommand}" WidthRequest="120" BackgroundColor="#AAAAAA" />
+            </HorizontalStackLayout>
+
+            <Label Text="Oggetti salvati" FontAttributes="Bold" TextColor="#333333" />
+
+            <CollectionView ItemsSource="{Binding Items}" SelectionMode="None">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Padding="8" ColumnDefinitions="40,*,auto" BackgroundColor="#F0F0F0" Margin="0,6">
+                            <Image Source="{Binding Icon}" WidthRequest="36" HeightRequest="36" Opacity="0.55" />
+                            <VerticalStackLayout Grid.Column="1">
+                                <Label Text="{Binding Description}" FontAttributes="Bold" TextColor="#666" />
+                                <Label Text="{Binding Barcode}" FontSize="12" TextColor="#888" />
+                            </VerticalStackLayout>
+                        </Grid>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
