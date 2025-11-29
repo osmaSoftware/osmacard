@@ -2,66 +2,33 @@ workflows:
   osmacard_maui:
     name: "OsmaCard .NET MAUI Build"
     max_build_duration: 60
+
     environment:
       vars:
         PROJECT_PATH: "OsmaCard.csproj"
         BUILD_CONFIGURATION: "Release"
-      flutter: stable
       xcode: latest
       groups:
         - ios_credentials
         - android_keystore
 
     scripts:
-      - name: Install .NET SDK
+
+      # -------------------------------------------------------------
+      # INSTALL .NET 8 (MAUI NON SUPPORTA .NET 9/10 SU CODENAMIC)
+      # -------------------------------------------------------------
+      - name: Install .NET 8 SDK
         script: |
-          brew install --cask dotnet-sdk
+          curl -L https://download.visualstudio.microsoft.com/download/pr/34b44a6c-33b0-4d3d-b694-0a9eecdccb9e/5a1f89e2a9b419add4ef95c0d37db114/dotnet-sdk-8.0.404-osx-arm64.pkg -o dotnet8.pkg
+          sudo installer -pkg dotnet8.pkg -target /
           export PATH="/usr/local/share/dotnet:$PATH"
           dotnet --version
 
-      - name: Install required workloads (.NET MAUI)
+      # -------------------------------------------------------------
+      # INSTALL MAUI WORKLOADS NECESSARI
+      # -------------------------------------------------------------
+      - name: Install MAUI workloads
         script: |
-          dotnet workload restore
-          dotnet workload install maui
-          dotnet workload install android
-          dotnet workload install wasm-tools-net8
-          dotnet workload list
+          export PATH="/usr/local/share/dotnet:$PATH"
 
-      - name: Restore NuGet packages
-        script: |
-          dotnet restore $PROJECT_PATH
-
-      - name: Build Android APK
-        script: |
-          dotnet build $PROJECT_PATH \
-            -c $BUILD_CONFIGURATION \
-            -f net8.0-android \
-            -p:AndroidSigningKeyStore=$CM_KEYSTORE_PATH \
-            -p:AndroidSigningKeyAlias=$CM_KEY_ALIAS \
-            -p:AndroidSigningKeyPass=$CM_KEY_PASSWORD \
-            -p:AndroidSigningStorePass=$CM_KEYSTORE_PASSWORD \
-            -o build/android
-
-      - name: Build iOS IPA
-        script: |
-          dotnet publish $PROJECT_PATH \
-            -c $BUILD_CONFIGURATION \
-            -f net8.0-ios \
-            -p:ArchiveOnPublish=true \
-            -p:EnableCodeSigning=true \
-            -p:CodesignKey="$CERTIFICATE_ID" \
-            -p:CodesignProvision="$PROVISIONING_PROFILE_UUID" \
-            -o build/ios
-
-    artifacts:
-      - build/android/**/*.apk
-      - build/android/**/*.aab
-      - build/ios/**/*.ipa
-
-    publishing:
-      email:
-        recipients:
-          - your_email@example.com
-        notify:
-          success: true
-          failure: true
+          dotnet workload install mau
