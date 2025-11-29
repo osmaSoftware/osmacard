@@ -1,15 +1,14 @@
 workflows:
-  osmacard_maui:
-    name: "OsmaCard .NET MAUI Build"
-    max_build_duration: 60
+  android_maui:
+    name: "OsmaCard .NET MAUI Android Build"
+    max_build_duration: 30
+
     environment:
+      platforms:
+        - linux
       vars:
         PROJECT_PATH: "OsmaCard.csproj"
         BUILD_CONFIGURATION: "Release"
-      xcode: latest
-      groups:
-        - ios_credentials
-        - android_keystore
 
     cache:
       cache_paths:
@@ -18,67 +17,49 @@ workflows:
         - $HOME/.dotnet/tools
 
     scripts:
+
+      # -------------------------------------------------------------
+      # INSTALL .NET 8 SDK (Linux)
+      # -------------------------------------------------------------
       - name: Install .NET 8 SDK
         script: |
-          echo "⬇️ Scarico .NET SDK 8 per macOS ARM64..."
-          curl -L -o dotnet8.pkg https://download.visualstudio.microsoft.com/download/pr/3c703aff-58f2-43aa-a7d6-ff35156d3404/8f179fc1f761a4d29fe8a32e6fe980b9/dotnet-sdk-8.0.100-osx-arm64.pkg
-          echo "📦 Installo .NET 8..."
-          sudo installer -pkg dotnet8.pkg -target /
-          export PATH="/usr/local/share/dotnet:$PATH"
+          mkdir -p $HOME/dotnet
+          curl -L https://dotnet.microsoft.com/download/dotnet/thank-you/sdk-8.0.100-linux-x64-binaries -o dotnet.tar.gz
+          tar -xzf dotnet.tar.gz -C $HOME/dotnet
+          export PATH="$HOME/dotnet:$PATH"
+          export DOTNET_ROOT="$HOME/dotnet"
           dotnet --version
 
-      - name: Install MAUI Workloads
+      # -------------------------------------------------------------
+      # INSTALL WORKLOADS MAUI + ANDROID
+      # -------------------------------------------------------------
+      - name: Install workloads
         script: |
-          echo "⚙️ Install MAUI workloads..."
-          export PATH="/usr/local/share/dotnet:$PATH"
-          dotnet workload install android --skip-signature-check
-          dotnet workload install ios --skip-signature-check
-          dotnet workload install wasm-tools --skip-signature-check
-          dotnet workload install maui --skip-signature-check
+          export PATH="$HOME/dotnet:$PATH"
+          export DOTNET_ROOT="$HOME/dotnet"
 
-      - name: Workload restore (fix NETSDK1147)
-        script: |
-          export PATH="/usr/local/share/dotnet:$PATH"
+          dotnet workload install maui
+          dotnet workload install android
           dotnet workload restore
           dotnet workload list
 
+      # -------------------------------------------------------------
+      # RESTORE NUGET PACKAGES
+      # -------------------------------------------------------------
       - name: Restore NuGet packages
         script: |
-          export PATH="/usr/local/share/dotnet:$PATH"
+          export PATH="$HOME/dotnet:$PATH"
           dotnet restore $PROJECT_PATH
 
+      # -------------------------------------------------------------
+      # BUILD ANDROID APK/AAB
+      # -------------------------------------------------------------
       - name: Build Android APK
         script: |
-          export PATH="/usr/local/share/dotnet:$PATH"
+          export PATH="$HOME/dotnet:$PATH"
+
           dotnet build $PROJECT_PATH \
             -c $BUILD_CONFIGURATION \
             -f net8.0-android \
             -p:AndroidSigningKeyStore=$CM_KEYSTORE_PATH \
-            -p:AndroidSigningKeyAlias=$CM_KEY_ALIAS \
-            -p:AndroidSigningKeyPass=$CM_KEY_PASSWORD \
-            -p:AndroidSigningStorePass=$CM_KEYSTORE_PASSWORD \
-            -o build/android
-
-      - name: Build iOS IPA
-        script: |
-          export PATH="/usr/local/share/dotnet:$PATH"
-          dotnet publish $PROJECT_PATH \
-            -c $BUILD_CONFIGURATION \
-            -f net8.0-ios \
-            -p:ArchiveOnPublish=true \
-            -p:CodesignKey="$CERTIFICATE_ID" \
-            -p:CodesignProvision="$PROVISIONING_PROFILE_UUID" \
-            -o build/ios
-
-    artifacts:
-      - build/android/**/*.apk
-      - build/android/**/*.aab
-      - build/ios/**/*.ipa
-
-    publishing:
-      email:
-        recipients:
-          - your_email@example.com
-        notify:
-          success: true
-          failure: true
+            -p:Andr
