@@ -19,9 +19,12 @@ workflows:
           export PATH="/usr/local/share/dotnet:$PATH"
           dotnet --version
 
-      - name: Install .NET MAUI workload
+      - name: Install required workloads (.NET MAUI)
         script: |
+          dotnet workload restore
           dotnet workload install maui
+          dotnet workload install android
+          dotnet workload install wasm-tools-net8
           dotnet workload list
 
       - name: Restore NuGet packages
