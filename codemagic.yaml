@@ -4,8 +4,6 @@ workflows:
     max_build_duration: 30
 
     environment:
-      platforms:
-        - linux
       vars:
         PROJECT_PATH: "OsmaCard.csproj"
         BUILD_CONFIGURATION: "Release"
@@ -18,9 +16,7 @@ workflows:
 
     scripts:
 
-      # -------------------------------------------------------------
       # INSTALL .NET 8 SDK (Linux)
-      # -------------------------------------------------------------
       - name: Install .NET 8 SDK
         script: |
           mkdir -p $HOME/dotnet
@@ -30,9 +26,7 @@ workflows:
           export DOTNET_ROOT="$HOME/dotnet"
           dotnet --version
 
-      # -------------------------------------------------------------
       # INSTALL WORKLOADS MAUI + ANDROID
-      # -------------------------------------------------------------
       - name: Install workloads
         script: |
           export PATH="$HOME/dotnet:$PATH"
@@ -43,17 +37,13 @@ workflows:
           dotnet workload restore
           dotnet workload list
 
-      # -------------------------------------------------------------
       # RESTORE NUGET PACKAGES
-      # -------------------------------------------------------------
       - name: Restore NuGet packages
         script: |
           export PATH="$HOME/dotnet:$PATH"
           dotnet restore $PROJECT_PATH
 
-      # -------------------------------------------------------------
       # BUILD ANDROID APK/AAB
-      # -------------------------------------------------------------
       - name: Build Android APK
         script: |
           export PATH="$HOME/dotnet:$PATH"
@@ -62,4 +52,11 @@ workflows:
             -c $BUILD_CONFIGURATION \
             -f net8.0-android \
             -p:AndroidSigningKeyStore=$CM_KEYSTORE_PATH \
-            -p:Andr
+            -p:AndroidSigningKeyAlias=$CM_KEY_ALIAS \
+            -p:AndroidSigningKeyPass=$CM_KEY_PASSWORD \
+            -p:AndroidSigningStorePass=$CM_KEYSTORE_PASSWORD \
+            -o build/android
+
+    artifacts:
+      - build/android/**/*.apk
+      - build/android/**/*.aab
