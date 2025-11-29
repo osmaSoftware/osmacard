@@ -1,0 +1,57 @@
+workflows:
+  osmacard_maui:
+    name: "OsmaCard .NET MAUI Build"
+    max_build_duration: 60
+    environment:
+      vars:
+        PROJECT_PATH: "OsmaCard.csproj"
+        BUILD_CONFIGURATION: "Release"
+      flutter: stable
+      xcode: latest
+      groups:
+        - ios_credentials   # se usi iOS
+        - android_keystore  # se firmi l'APK/AAB
+
+    scripts:
+      - name: Install .NET MAUI workload
+        script: |
+          dotnet workload install maui
+
+      - name: Restore NuGet packages
+        script: |
+          dotnet restore $PROJECT_PATH
+
+      - name: Build Android APK
+        script: |
+          dotnet build $PROJECT_PATH \
+            -c $BUILD_CONFIGURATION \
+            -f net8.0-android \
+            -p:AndroidSigningKeyStore=$CM_KEYSTORE_PATH \
+            -p:AndroidSigningKeyAlias=$CM_KEY_ALIAS \
+            -p:AndroidSigningKeyPass=$CM_KEY_PASSWORD \
+            -p:AndroidSigningStorePass=$CM_KEYSTORE_PASSWORD \
+            -o build/android
+
+      - name: Build iOS IPA (solo se su Mac)
+        script: |
+          dotnet publish $PROJECT_PATH \
+            -c $BUILD_CONFIGURATION \
+            -f net8.0-ios \
+            -p:ArchiveOnPublish=true \
+            -p:EnableCodeSigning=true \
+            -p:CodesignKey="$CERTIFICATE_ID" \
+            -p:CodesignProvision="$PROVISIONING_PROFILE_UUID" \
+            -o build/ios
+
+    artifacts:
+      - build/android/**/*.apk
+      - build/android/**/*.aab
+      - build/ios/**/*.ipa
+
+    publishing:
+      email:
+        recipients:
+          - your_email@example.com
+        notify:
+          success: true
+          failure: true
