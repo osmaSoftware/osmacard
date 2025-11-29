@@ -9,13 +9,20 @@ workflows:
       flutter: stable
       xcode: latest
       groups:
-        - ios_credentials   # se usi iOS
-        - android_keystore  # se firmi l'APK/AAB
+        - ios_credentials
+        - android_keystore
 
     scripts:
+      - name: Install .NET SDK
+        script: |
+          brew install --cask dotnet-sdk
+          export PATH="/usr/local/share/dotnet:$PATH"
+          dotnet --version
+
       - name: Install .NET MAUI workload
         script: |
           dotnet workload install maui
+          dotnet workload list
 
       - name: Restore NuGet packages
         script: |
@@ -32,7 +39,7 @@ workflows:
             -p:AndroidSigningStorePass=$CM_KEYSTORE_PASSWORD \
             -o build/android
 
-      - name: Build iOS IPA (solo se su Mac)
+      - name: Build iOS IPA
         script: |
           dotnet publish $PROJECT_PATH \
             -c $BUILD_CONFIGURATION \
